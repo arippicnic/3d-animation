@@ -1,17 +1,35 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useThree } from "@react-three/fiber";
+import * as THREE from "three";
 
 /**
- * Single main light matching floor image sunlight.
- * - From the RIGHT side of the scene (+X), low angle (late afternoon through window)
- * - Slightly downward, not top-down; one coherent light for all shadows
- * - Warm soft yellow/golden; soft, long shadows aligned with light
+ * Single main light: late afternoon (~5 PM) sun from upper-right.
+ * - Upper-right: positive X, positive Z; Y lower than noon but above character
+ * - Low Y relative to horizontal distance → long, stretched shadows (no scaling)
+ * - Explicit target at scene center; soft shadows, natural falloff
  */
 export const CameraLight: React.FC = () => {
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  const { scene } = useThree();
+  const target = useMemo(() => new THREE.Object3D(), []);
+
+  useEffect(() => {
+    const light = lightRef.current;
+    if (!light) return;
+    target.position.set(0, 2, 0);
+    scene.add(target);
+    light.target = target;
+    return () => {
+      scene.remove(target);
+    };
+  }, [scene, target]);
+
   return (
     <directionalLight
-      position={[55, 20, 0]}
+      ref={lightRef}
+      position={[45, 22, -45]}
       intensity={1.2}
       color="#f0d890"
       castShadow

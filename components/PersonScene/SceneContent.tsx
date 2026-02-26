@@ -14,7 +14,7 @@ export const SceneContent: React.FC = () => {
     <>
       <Ground />
       <Character groupRef={characterRef} />
-      <CameraLight target={characterRef} />
+      <CameraLight />
       <FixedCamera />
     </>
   );

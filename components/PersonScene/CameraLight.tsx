@@ -4,12 +4,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-/**
- * Single main light: late afternoon (~5 PM) sun from upper-right.
- * - Upper-right, long shadows; explicit target at scene center.
- * - Soft shadow edges (high radius) so shadows read as light occlusion,
- *   blend gradually on dark floor areas, no hard cutoffs; one light only.
- */
+
 export const CameraLight: React.FC = () => {
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const { scene } = useThree();
@@ -29,7 +24,7 @@ export const CameraLight: React.FC = () => {
   return (
     <directionalLight
       ref={lightRef}
-      position={[45, 22, -50]}
+      position={[45, 22, -25]}
       intensity={1.2}
       color="#f0d890"
       castShadow

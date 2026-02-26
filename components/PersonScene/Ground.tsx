@@ -8,8 +8,6 @@ export const Ground: React.FC = () => {
 
   const configuredTexture = useMemo(() => {
     const t = texture.clone();
-    // Keep a single, continuous texture across the whole floor
-    // (no visible tiling or repetition)
     t.anisotropy = 8;
     return t;
   }, [texture]);

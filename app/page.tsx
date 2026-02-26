@@ -1,4 +1,4 @@
-import { PersonScene } from "../components/PersonScene";
+import PersonScene from "@/components/PersonScene";
 
 export default function Home() {
   return (

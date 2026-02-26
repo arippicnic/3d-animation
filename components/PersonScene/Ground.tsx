@@ -19,8 +19,8 @@ export const Ground: React.FC = () => {
       <planeGeometry args={[60, 60]} />
       <meshStandardMaterial
         map={configuredTexture}
-        metalness={0.05}
-        roughness={0.35}
+        metalness={0.04}
+        roughness={0.52}
       />
     </mesh>
   );

@@ -6,9 +6,9 @@ import * as THREE from "three";
 
 /**
  * Single main light: late afternoon (~5 PM) sun from upper-right.
- * - Upper-right: positive X, positive Z; Y lower than noon but above character
- * - Low Y relative to horizontal distance → long, stretched shadows (no scaling)
- * - Explicit target at scene center; soft shadows, natural falloff
+ * - Upper-right, long shadows; explicit target at scene center.
+ * - Soft shadow edges (high radius) so shadows read as light occlusion,
+ *   blend gradually on dark floor areas, no hard cutoffs; one light only.
  */
 export const CameraLight: React.FC = () => {
   const lightRef = useRef<THREE.DirectionalLight>(null);
@@ -29,14 +29,14 @@ export const CameraLight: React.FC = () => {
   return (
     <directionalLight
       ref={lightRef}
-      position={[45, 22, -45]}
+      position={[45, 22, -50]}
       intensity={1.2}
       color="#f0d890"
       castShadow
       shadow-mapSize-width={2048}
       shadow-mapSize-height={2048}
-      shadow-radius={10}
-      shadow-bias={-0.0002}
+      shadow-radius={14}
+      shadow-bias={-0.00015}
       shadow-camera-near={5}
       shadow-camera-far={220}
       shadow-camera-left={-90}

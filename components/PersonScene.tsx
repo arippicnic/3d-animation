@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { RepeatWrapping, Vector3 } from "three";
+import { Quaternion } from "three";
 
 type KeyboardState = {
   ArrowUp: boolean;
@@ -93,6 +94,8 @@ type CharacterProps = {
   groupRef: React.RefObject<THREE.Group | null>;
 };
 
+const FLOOR_HALF_SIZE = 30;
+
 const Character: React.FC<CharacterProps> = ({ groupRef }) => {
   const keys = useKeyboard();
   const moveSpeed = 4;
@@ -124,13 +127,37 @@ const Character: React.FC<CharacterProps> = ({ groupRef }) => {
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
 
-      const angle = Math.atan2(moveDirection.x, -moveDirection.z);
-      group.rotation.y = angle;
+      const forward = new Vector3(0, 0, -1);
+const targetDir = moveDirection.clone().normalize();
 
-      group.position.addScaledVector(moveDirection, moveSpeed * delta);
+const targetQuat = new Quaternion().setFromUnitVectors(
+  forward,
+  targetDir
+);
+
+// smooth rotate
+group.quaternion.slerp(targetQuat, 1 - Math.exp(-10 * delta));
+
+      const nextPosition = group.position
+        .clone()
+        .addScaledVector(moveDirection, moveSpeed * delta);
+
+      nextPosition.x = THREE.MathUtils.clamp(
+        nextPosition.x,
+        -FLOOR_HALF_SIZE,
+        FLOOR_HALF_SIZE,
+      );
+      nextPosition.z = THREE.MathUtils.clamp(
+        nextPosition.z,
+        -FLOOR_HALF_SIZE,
+        FLOOR_HALF_SIZE,
+      );
+
+      nextPosition.y = 0;
+      group.position.copy(nextPosition);
+    } else {
+      group.position.y = 0;
     }
-
-    group.position.y = 0;
   });
 
   return (
@@ -140,29 +167,73 @@ const Character: React.FC<CharacterProps> = ({ groupRef }) => {
   );
 };
 
-type ThirdPersonCameraProps = {
+type CameraLightProps = {
   target: React.RefObject<THREE.Group | null>;
 };
 
-const ThirdPersonCamera: React.FC<ThirdPersonCameraProps> = ({ target }) => {
-  const { camera } = useThree();
-  const offset = useMemo(() => new Vector3(0, 3, 7), []);
-  const desiredPosition = useMemo(() => new Vector3(), []);
+const CameraLight: React.FC<CameraLightProps> = ({ target }) => {
+  const { camera, scene } = useThree();
+  const lightRef = useRef<THREE.DirectionalLight | null>(null);
+  const lightTarget = useMemo(() => new THREE.Object3D(), []);
 
-  useFrame((_, delta) => {
+  useEffect(() => {
+    const light = lightRef.current;
+    if (!light) return;
+
+    light.target = lightTarget;
+    scene.add(lightTarget);
+
+    return () => {
+      scene.remove(lightTarget);
+    };
+  }, [scene, lightTarget]);
+
+  useFrame(() => {
+    const light = lightRef.current;
     const targetGroup = target.current;
-    if (!targetGroup) return;
+    if (!light || !targetGroup) return;
 
-    desiredPosition.copy(targetGroup.position).add(offset);
+    const targetWorld = new Vector3();
+    targetGroup.getWorldPosition(targetWorld);
 
-    const t = 1 - Math.pow(0.001, delta * 60);
-    camera.position.lerp(desiredPosition, t);
+    const forward = new Vector3()
+      .subVectors(targetWorld, camera.position)
+      .normalize();
+    const up = new Vector3(0, 1, 0);
+    const right = new Vector3().crossVectors(forward, up).normalize();
 
-    const tx = targetGroup.position.x;
-    const ty = targetGroup.position.y + 1.5;
-    const tz = targetGroup.position.z;
-    camera.lookAt(tx, ty, tz);
+    const lightPosition = new Vector3()
+      .copy(camera.position)
+      .addScaledVector(right, 10)
+      .addScaledVector(up, 5);
+
+    light.position.copy(lightPosition);
+
+    lightTarget.position.copy(targetWorld);
+    lightTarget.updateMatrixWorld();
   });
+
+  return (
+    <directionalLight
+      ref={lightRef}
+      intensity={1.5}
+      color="#ffffff"
+      castShadow
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
+      shadow-radius={4}
+      shadow-bias={-0.0004}
+    />
+  );
+};
+
+const FixedCamera: React.FC = () => {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    camera.position.set(0, 25, 70);
+    camera.lookAt(0, 5, 0);
+  }, [camera]);
 
   return null;
 };
@@ -172,18 +243,10 @@ const SceneContent: React.FC = () => {
 
   return (
     <>
-      <ambientLight intensity={0.45} />
-      <directionalLight
-        position={[6, 10, 4]}
-        intensity={1.1}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-      />
-
       <Ground />
       <Character groupRef={characterRef} />
-      <ThirdPersonCamera target={characterRef} />
+      <CameraLight target={characterRef} />
+      <FixedCamera />
     </>
   );
 };
@@ -201,7 +264,7 @@ const PersonScene: React.FC = () => {
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 3, 8], fov: 45 }}
+        camera={{ position: [0, 25, 70], fov: 35 }}
       >
         <color attach="background" args={["#020617"]} />
         <Suspense fallback={null}>

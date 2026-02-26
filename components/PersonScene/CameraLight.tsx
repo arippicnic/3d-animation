@@ -1,65 +1,30 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
-import { Vector3 } from "three";
+import React from "react";
 
-export type CameraLightProps = {
-  target: React.RefObject<THREE.Group | null>;
-};
-
-export const CameraLight: React.FC<CameraLightProps> = ({ target }) => {
-  const { camera, scene } = useThree();
-  const lightRef = useRef<THREE.DirectionalLight | null>(null);
-  const lightTarget = useMemo(() => new THREE.Object3D(), []);
-
-  useEffect(() => {
-    const light = lightRef.current;
-    if (!light) return;
-
-    light.target = lightTarget;
-    scene.add(lightTarget);
-
-    return () => {
-      scene.remove(lightTarget);
-    };
-  }, [scene, lightTarget]);
-
-  useFrame(() => {
-    const light = lightRef.current;
-    const targetGroup = target.current;
-    if (!light || !targetGroup) return;
-
-    const targetWorld = new Vector3();
-    targetGroup.getWorldPosition(targetWorld);
-
-    const forward = new Vector3()
-      .subVectors(targetWorld, camera.position)
-      .normalize();
-    const up = new Vector3(0, 1, 0);
-    const right = new Vector3().crossVectors(forward, up).normalize();
-
-    const lightPosition = new Vector3()
-      .copy(camera.position)
-      .addScaledVector(right, 10)
-      .addScaledVector(up, 5);
-
-    light.position.copy(lightPosition);
-    lightTarget.position.copy(targetWorld);
-    lightTarget.updateMatrixWorld();
-  });
-
+/**
+ * Single main light matching floor image sunlight.
+ * - From the RIGHT side of the scene (+X), low angle (late afternoon through window)
+ * - Slightly downward, not top-down; one coherent light for all shadows
+ * - Warm soft yellow/golden; soft, long shadows aligned with light
+ */
+export const CameraLight: React.FC = () => {
   return (
     <directionalLight
-      ref={lightRef}
-      intensity={1.5}
-      color="#ffffff"
+      position={[55, 20, 0]}
+      intensity={1.2}
+      color="#f0d890"
       castShadow
       shadow-mapSize-width={2048}
       shadow-mapSize-height={2048}
-      shadow-radius={4}
-      shadow-bias={-0.0004}
+      shadow-radius={10}
+      shadow-bias={-0.0002}
+      shadow-camera-near={5}
+      shadow-camera-far={220}
+      shadow-camera-left={-90}
+      shadow-camera-right={90}
+      shadow-camera-top={90}
+      shadow-camera-bottom={-90}
     />
   );
 };

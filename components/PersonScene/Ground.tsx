@@ -2,15 +2,14 @@
 
 import React, { useMemo } from "react";
 import { useTexture } from "@react-three/drei";
-import { RepeatWrapping } from "three";
 
 export const Ground: React.FC = () => {
-  const texture = useTexture("/flor.jpg");
+  const texture = useTexture("/flor.jpeg");
+
   const configuredTexture = useMemo(() => {
     const t = texture.clone();
-    t.wrapS = RepeatWrapping;
-    t.wrapT = RepeatWrapping;
-    t.repeat.set(8, 8);
+    // Keep a single, continuous texture across the whole floor
+    // (no visible tiling or repetition)
     t.anisotropy = 8;
     return t;
   }, [texture]);
